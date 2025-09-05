@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
@@ -69,5 +70,11 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
     Route::delete('/categories/{category}/delete', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+        ->name('notifications.readAll');
+    Route::get('/notifications/latest', [NotificationController::class, 'latest'])
+        ->name('notifications.latest');
+
 
 });

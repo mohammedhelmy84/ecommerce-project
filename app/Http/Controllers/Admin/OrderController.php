@@ -12,6 +12,7 @@ class OrderController extends Controller
     {
         $orders = Order::with('user')->latest()->get();
         return view('admin.orders.index', compact('orders'));
+
     }
 
     public function show(Order $order)

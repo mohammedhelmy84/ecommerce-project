@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Cart;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\NewOrderNotification;
+use Illuminate\Support\Facades\Notification;
 
 class CheckoutController extends Controller
 {
@@ -55,6 +58,8 @@ class CheckoutController extends Controller
             Cart::where('user_id', Auth::id())->delete();
         }
 
+        $admins = User::where('is_admin', true)->get();
+        Notification::send($admins, new NewOrderNotification($order));
         // return redirect()->route('cart.index')->with('success', 'تم إتمام الطلب بنجاح!');
         return redirect()->route('payment.mock', $order->id);
 
