@@ -97,10 +97,10 @@
 <body>
 
     <!-- Navbar -->
-    <nav class="navbar navbar-dark bg-dark fixed-top">
-        <div class="container-fluid">
+    <nav class="navbar navbar-dark bg-dark fixed-top shadow-sm">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
 
-            <!-- القسم الأيمن: زر القائمة + العنوان -->
+            <!-- القسم الأيمن -->
             <div class="d-flex align-items-center gap-2">
                 <button class="btn btn-outline-light" id="toggleSidebar">
                     <i class="bi bi-list"></i>
@@ -108,30 +108,39 @@
                 <span class="navbar-brand mb-0 h1">لوحة التحكم</span>
             </div>
 
-            <!-- زر الإشعارات -->
-            <div class="dropdown">
-                <button class="btn btn-outline-warning position-relative" id="notifBtn" data-bs-toggle="dropdown"
-                    aria-expanded="false">
-                    <i class="bi bi-bell-fill"></i>
-                    @if ($notifications->count() > 0)
-                        <span id="notifCount"
-                            class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger">
-                            {{ auth()->user()->unreadNotifications->count() }}
-                        </span>
+            <!-- القسم الأيسر -->
+            <div class="d-flex align-items-center gap-3">
 
-                    @endif
-                </button>
+                <!-- الإشعارات -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-warning position-relative" id="notifBtn" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($notifications) && $notifications->count() > 0)
+                            <span id="notifCount"
+                                class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger">
+                                {{ auth()->user()->unreadNotifications->count() }}
+                            </span>
+                        @endif
+                    </button>
 
-                <!-- القائمة -->
-                <ul class="dropdown-menu dropdown-menu-end text-end shadow mt-2" id="notifList"
-                    style="min-width: 280px;">
-                    <li class="text-center text-muted">جارِ التحميل...</li>
-                </ul>
+                    <ul class="dropdown-menu dropdown-menu-end text-end shadow mt-2" id="notifList"
+                        style="min-width: 280px;">
+                        <li class="text-center text-muted">جارِ التحميل...</li>
+                    </ul>
+                </div>
 
+                <!-- تسجيل الخروج -->
+                <form method="POST" action="{{ route('admin.logout') }}" class="m-0">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-danger">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </button>
+                </form>
             </div>
-
         </div>
     </nav>
+
 
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
@@ -140,7 +149,7 @@
         <a href="{{ route('admin.products.index') }}">📦 المنتجات</a>
         <a href="{{ route('admin.orders.index') }}">📦 الطلبات</a>
         <a href="{{ route('admin.notifications') }}">📦 الاشعارات</a>
-        <a href="#">👥 العملاء</a>
+        <a href="{{ route('admin.customers.index') }}">👥 العملاء</a>
         <a href="#">📊 التقارير</a>
         <a href="#">⚙ الإعدادات</a>
     </div>
@@ -176,26 +185,26 @@
 
             notifBtn.addEventListener("click", function () {
                 fetch("{{ route('admin.notifications') }}")
-                    .then(res => res.json())
-                    .then(data => {
-                        notifList.innerHTML = '<li><h6 class="dropdown-header">الإشعارات</h6></li>';
+            .then(res => res.json())
+            .then(data => {
+                notifList.innerHTML = '<li><h6 class="dropdown-header">الإشعارات</h6></li>';
 
-                        if (data.length === 0) {
-                            notifList.innerHTML += '<li class="text-center text-muted">لا توجد إشعارات</li>';
-                        } else {
-                            data.forEach(n => {
-                                notifList.innerHTML += `
+                if (data.length === 0) {
+                    notifList.innerHTML += '<li class="text-center text-muted">لا توجد إشعارات</li>';
+                } else {
+                    data.forEach(n => {
+                        notifList.innerHTML += `
                             <li><a class="dropdown-item" href="/orders/${n.data.order_id}">
                                 📌 ${n.data.message}
                             </a></li>
                         `;
-                            });
-                            notifList.innerHTML += '<li><hr class="dropdown-divider"></li>';
-                            notifList.innerHTML += '<li><a class="dropdown-item text-center text-primary" href="#">عرض الكل</a></li>';
-                        }
-
-                        notifCount.textContent = data.length;
                     });
+                    notifList.innerHTML += '<li><hr class="dropdown-divider"></li>';
+                    notifList.innerHTML += '<li><a class="dropdown-item text-center text-primary" href="#">عرض الكل</a></li>';
+                }
+
+                notifCount.textContent = data.length;
+            });
             });
         });
         */

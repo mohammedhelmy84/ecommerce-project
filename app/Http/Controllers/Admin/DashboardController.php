@@ -16,12 +16,17 @@ class DashboardController extends Controller
         $categoriesCount = Category::count();
         $salesTotal = Order::where('status', 'paid')->sum('total');
         $notifications = auth()->user()->notifications()->take(5)->get();
+        $latestOrders = Order::with('customer')
+            ->latest()
+            ->take(5)
+            ->get();
         return view('admin.dashboard', compact(
             'ordersCount',
             'productsCount',
             'categoriesCount',
             'salesTotal',
-            'notifications'
+            'notifications',
+            'latestOrders'
         ));
     }
 }

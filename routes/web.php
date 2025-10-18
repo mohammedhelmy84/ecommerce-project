@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\OrderController;
@@ -10,10 +12,9 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use Twilio\Rest\Client;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+
 
 //cart
 Route::middleware(['auth'])->group(function () {
@@ -50,7 +51,7 @@ Route::get('/payment/mock/{orderId}', [PaymentController::class, 'mockPage'])->n
 Route::post('/payment/mock/confirm', [PaymentController::class, 'mockConfirm'])->name('payment.mock.confirm');
 
 //admin
-Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () {
+Route::prefix('admin')->middleware(['auth', 'is_admin'])->name('admin.')->group(function () {
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
@@ -75,6 +76,46 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
         ->name('notifications.readAll');
     Route::get('/notifications/latest', [NotificationController::class, 'latest'])
         ->name('notifications.latest');
+    //customers
+    Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+    Route::get('/customers/create', [CustomerController::class, 'create'])->name('customers.create');
+    Route::post('/customers/create', [CustomerController::class, 'store'])->name('customers.store');
+    Route::get('/customers/show/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+    Route::get('/customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
+    Route::get('/customers/{customer}/update', [CustomerController::class, 'update'])->name('customers.update');
+    Route::get('/customers/{customer}/delete', [CustomerController::class, 'destroy'])->name('customers.destroy');
+    Route::get('/customers/{customer}/print', [CustomerController::class, 'print'])->name('customers.print');
 
 
 });
+
+
+
+
+Route::get('/admin/login', [AuthController::class, 'showLoginForm'])->name('admin.login');
+Route::post('/admin/login', [AuthController::class, 'login'])->name('admin.login.submit');
+Route::post('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
+
+// test
+
+Route::get('/test-whatsapp', function() {
+    $sid = env('TWILIO_SID');
+    $token = env('TWILIO_TOKEN');
+    $from = env('TWILIO_WHATSAPP_FROM');
+    
+    $to = 'whatsapp:+201016440812'; // ضع رقمك مع كود الدولة
+    $message = "هذه رسالة تجريبية من Laravel باستخدام Twilio Sandbox!";
+
+    try {
+        $client = new Client($sid, $token);
+        $client->messages->create($to, [
+            'from' => $from,
+            'body' => $message
+        ]);
+        return "تم إرسال الرسالة بنجاح ✅";
+    } catch (\Exception $e) {
+        return "حدث خطأ: " . $e->getMessage();
+    }
+});
+
+// test
