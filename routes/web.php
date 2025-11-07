@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
@@ -13,6 +14,9 @@ use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use Twilio\Rest\Client;
+use Kreait\Firebase\Factory;
+
+
 
 
 
@@ -89,20 +93,27 @@ Route::prefix('admin')->middleware(['auth', 'is_admin'])->name('admin.')->group(
 
 });
 
+// verify phone
 
+Route::get('/verify-phone', [RegisterController::class, 'showPhoneForm'])->name('verify.phone');
+Route::post('/verify-phone/send', [RegisterController::class, 'sendOtp'])->name('verify.phone.send');
+Route::post('/verify-phone/confirm', [RegisterController::class, 'confirmOtp'])->name('verify.phone.confirm');
 
+// صفحة استكمال التسجيل
+Route::get('/register-details', [RegisterController::class, 'showDetailsForm'])->name('register-details');
+Route::post('/register-details', [RegisterController::class, 'storeDetails'])->name('register-details.store');
 
-Route::get('/admin/login', [AuthController::class, 'showLoginForm'])->name('admin.login');
-Route::post('/admin/login', [AuthController::class, 'login'])->name('admin.login.submit');
-Route::post('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
+Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // test
 
-Route::get('/test-whatsapp', function() {
+Route::get('/test-whatsapp', function () {
     $sid = env('TWILIO_SID');
     $token = env('TWILIO_TOKEN');
     $from = env('TWILIO_WHATSAPP_FROM');
-    
+
     $to = 'whatsapp:+201016440812'; // ضع رقمك مع كود الدولة
     $message = "هذه رسالة تجريبية من Laravel باستخدام Twilio Sandbox!";
 
@@ -119,3 +130,59 @@ Route::get('/test-whatsapp', function() {
 });
 
 // test
+
+Route::get('/test-sms', function () {
+    $sid = env('TWILIO_SID');
+    $token = env('TWILIO_AUTH_TOKEN');
+    $from = env('TWILIO_FROM');
+    $to = '+20xxxxxxxxxx'; // رقمك التجريبي
+
+    if (!$sid || !$token || !$from) {
+        return response()->json(['status' => 'error', 'message' => 'TWILIO_SID, TWILIO_AUTH_TOKEN or TWILIO_FROM is missing']);
+    }
+
+    $client = new Client($sid, $token);
+    $message = $client->messages->create($to, [
+        'from' => $from,
+        'body' => 'رسالة اختبار من Laravel'
+    ]);
+
+    return response()->json(['status' => 'sent', 'sid' => $message->sid]);
+});
+
+
+
+Route::get('/check-env', function () {
+    return [
+        'TWILIO_SID' => env('TWILIO_SID'),
+        'TWILIO_AUTH_TOKEN' => env('TWILIO_AUTH_TOKEN'),
+        'TWILIO_FROM' => env('TWILIO_FROM'),
+    ];
+});
+
+
+
+Route::get('/test-firebase', function () {
+    try {
+        $json = file_get_contents(env('FIREBASE_CREDENTIALS'));
+        $factory = (new Factory)->withServiceAccount($json);
+
+        $auth = $factory->createAuth();
+        $users = $auth->listUsers(100);
+
+        return "Firebase Connected ✅ Users Count: " . count(iterator_to_array($users));
+    } catch (\Throwable $e) {
+        return "Firebase Error ❌: " . $e->getMessage();
+    }
+});
+
+
+Route::get('/check-file', function () {
+    $path = env('FIREBASE_CREDENTIALS'); // مسار كامل الآن
+    if (file_exists($path)) {
+        return "File exists ✅ at: " . $path;
+    } else {
+        return "File NOT found ❌ at: " . $path;
+    }
+});
+

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 
 <head>
     <meta charset="UTF-8">
@@ -11,8 +11,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- خط جميل (اختياري) -->
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600&display=swap" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <!-- Firebase App (الأساسي) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+
+
     @yield('scripts')
     <style>
         body {
@@ -22,6 +29,21 @@
 
         nav.navbar {
             margin-bottom: 20px;
+        }
+
+        #map {
+            position: relative;
+            z-index: 1;
+        }
+
+        .leaflet-container {
+            cursor: grab !important;
+            pointer-events: auto !important;
+            touch-action: pan-x pan-y !important;
+        }
+
+        .leaflet-container:active {
+            cursor: grabbing !important;
         }
     </style>
 
@@ -55,7 +77,7 @@
                         <a class="nav-link" href="{{ route('login') }}">تسجيل الدخول</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('register') }}">إنشاء حساب</a>
+                        <a class="nav-link" href="{{ route('verify.phone') }}">إنشاء حساب</a>
                     </li>
                 @else
                     <!-- للمستخدم المسجّل -->
@@ -69,7 +91,7 @@
 
                             {{-- ✅ إظهار رابط لوحة التحكم فقط لو المستخدم أدمن --}}
                             @if(Auth::user()->is_admin == 1)
-                                <a class="dropdown-item" href="{{ url('/admin/dashboard') }}">
+                                <a class="dropdown-item" href="{{ url('/admin/dashboard') }}" target="_blank">
                                     لوحة التحكم
                                 </a>
                             @endif
@@ -99,6 +121,11 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     @stack('scripts')
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+
 </body>
 
 </html>
