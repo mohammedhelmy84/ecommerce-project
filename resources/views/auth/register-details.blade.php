@@ -13,7 +13,7 @@
 
                         {{-- عرض رقم الهاتف الذي تم التحقق منه --}}
                         <div class="alert alert-success text-center">
-                            ✅ تم التحقق من رقم هاتفك بنجاح: <strong>{{ session('verified_phone_number') }} {{ session('verified_phone_number') }}</strong>
+                            ✅ تم التحقق من رقم هاتفك بنجاح: <strong>{{ session('verified_phone_number') }}</strong>
                         </div>
 
                         {{-- الاسم --}}
@@ -63,16 +63,17 @@
                             </div>
                         </div>
 
-                        {{-- المحافظة --}}
+                     {{-- المحافظة --}}
                         <div class="row mb-3">
                             <label for="governorate" class="col-md-4 col-form-label text-md-end">المحافظة</label>
                             <div class="col-md-6">
                                 <select id="governorate" class="form-select @error('governorate') is-invalid @enderror" name="governorate" required>
                                     <option value="">اختر المحافظة</option>
-                                    <option value="القاهرة" {{ old('governorate') == 'القاهرة' ? 'selected' : '' }}>القاهرة</option>
-                                    <option value="الجيزة" {{ old('governorate') == 'الجيزة' ? 'selected' : '' }}>الجيزة</option>
-                                    <option value="الإسكندرية" {{ old('governorate') == 'الإسكندرية' ? 'selected' : '' }}>الإسكندرية</option>
-                                    <option value="الدقهلية" {{ old('governorate') == 'الدقهلية' ? 'selected' : '' }}>الدقهلية</option>
+                                    @foreach($governorates as $gov)
+                                        <option value="{{ $gov->id }}" {{ old('governorate') == $gov->id ? 'selected' : '' }}>
+                                            {{ $gov->governorate_name_ar }}
+                                        </option>
+                                    @endforeach
                                 </select>
                                 @error('governorate')
                                     <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
@@ -84,9 +85,9 @@
                         <div class="row mb-3">
                             <label for="city" class="col-md-4 col-form-label text-md-end">المدينة</label>
                             <div class="col-md-6">
-                                <input id="city" type="text"
-                                       class="form-control @error('city') is-invalid @enderror"
-                                       name="city" value="{{ old('city') }}" required placeholder="مثلاً: المعادي">
+                                <select id="city" name="city" class="form-select @error('city') is-invalid @enderror" required>
+                                    <option value="">اختر المدينة</option>
+                                </select>
                                 @error('city')
                                     <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
                                 @enderror
@@ -194,5 +195,27 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 });
+</script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $('#governorate').on('change', function() {
+        var govId = $(this).val();
+        if(govId){
+            $.ajax({
+                url: '{{ route("get.cities") }}',
+                type: 'GET',
+                data: { gov_id: govId },
+                success: function(data){
+                    $('#city').empty().append('<option value="">اختر المدينة</option>');
+                    $.each(data, function(key, value){
+                        $('#city').append('<option value="'+value.city_name_ar+'">'+value.city_name_ar+'</option>');
+                    });
+                }
+            });
+        } else {
+            $('#city').empty().append('<option value="">اختر المدينة</option>');
+        }
+    });
 </script>
 @endsection

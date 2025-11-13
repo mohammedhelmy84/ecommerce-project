@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\City;
+use App\Models\Governorate;
 use App\Models\User;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Validator;
@@ -105,7 +107,15 @@ class RegisterController extends Controller
             return redirect()->route('verify.phone');
         }
 
-        return view('auth.register-details');
+        $governorates = Governorate::all();
+
+        return view('auth.register-details', compact('governorates'));
+    }
+
+    public function getCities(Request $request)
+    {
+        $cities = City::where('governorate_id', $request->gov_id)->get();
+        return response()->json($cities);
     }
 
     /*
@@ -134,6 +144,8 @@ class RegisterController extends Controller
         $firebase_uid = session('verified_phone_uid');
         $phone = session('verified_phone_number');
 
+        $isFirstUser = User::count() === 0;
+
         // إنشاء المستخدم
         $user = User::create([
             'name' => $request->name,
@@ -146,7 +158,8 @@ class RegisterController extends Controller
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'firebase_uid' => $firebase_uid,
-            'role' => 'customer',
+            'role' => $isFirstUser ? 'admin' : 'customer', // إذا أول مستخدم يصبح admin
+            'is_admin' => $isFirstUser ? 1 : 0,
             'is_phone_verified' => true
 
         ]);

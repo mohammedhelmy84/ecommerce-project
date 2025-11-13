@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use Twilio\Rest\Client;
 use Kreait\Firebase\Factory;
+use Illuminate\Support\Facades\Mail;
 
 
 
@@ -107,6 +108,11 @@ Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+//getcities ajax
+Route::get('/cities', [RegisterController::class, 'getCities'])->name('get.cities');
+
+
+
 // test
 
 Route::get('/test-whatsapp', function () {
@@ -186,3 +192,11 @@ Route::get('/check-file', function () {
     }
 });
 
+
+Route::get('/test-mail', function () {
+    Mail::raw('اختبار الإرسال من Laravel', function ($message) {
+        $message->to('example@example.com')->subject('اختبار Gmail');
+    });
+
+    return 'تم الإرسال بنجاح!';
+});
