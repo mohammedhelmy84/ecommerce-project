@@ -16,7 +16,19 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use Twilio\Rest\Client;
 use Kreait\Firebase\Factory;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\OtpController;
+use App\Models\Otp;
+use App\Services\SmsService;
+use Illuminate\Http\Request;
 
+
+
+
+
+
+// dashboard login
+Route::get('/admin/login', [DashboardController::class, 'login'])->name('admin.login');
+Route::post('/admin/login', [DashboardController::class, 'loginPost'])->name('admin.login.submit');
 
 
 
@@ -33,7 +45,7 @@ Route::middleware(['auth'])->group(function () {
 //products
 Route::get('/', [ProductController::class, 'index'])->name('products.index');
 
-Auth::routes();
+Auth::routes(['register' => false]); // ✅ عطّل register الافتراضي
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
@@ -57,6 +69,10 @@ Route::post('/payment/mock/confirm', [PaymentController::class, 'mockConfirm'])-
 
 //admin
 Route::prefix('admin')->middleware(['auth', 'is_admin'])->name('admin.')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::post('/logout', [DashboardController::class, 'logout'])->name('logout');
+
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
@@ -75,7 +91,7 @@ Route::prefix('admin')->middleware(['auth', 'is_admin'])->name('admin.')->group(
     Route::put('/categories/{category}/update', [AdminCategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{category}/delete', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.readAll');
@@ -92,111 +108,45 @@ Route::prefix('admin')->middleware(['auth', 'is_admin'])->name('admin.')->group(
     Route::get('/customers/{customer}/print', [CustomerController::class, 'print'])->name('customers.print');
 
 
+
+
 });
 
 // verify phone
-
-Route::get('/verify-phone', [RegisterController::class, 'showPhoneForm'])->name('verify.phone');
-Route::post('/verify-phone/send', [RegisterController::class, 'sendOtp'])->name('verify.phone.send');
-Route::post('/verify-phone/confirm', [RegisterController::class, 'confirmOtp'])->name('verify.phone.confirm');
+Route::middleware(['allow.otp'])->group(function () {
+    Route::get('/verify-phone', [RegisterController::class, 'showPhoneForm'])->name('verify.phone');
+    // Route::post('/verify-phone/send', [RegisterController::class, 'sendOtp'])->name('verify.phone.send');
+// Route::post('/verify-phone/confirm', [RegisterController::class, 'confirmOtp'])->name('verify.phone.confirm');
+    Route::post('/send-otp', [OtpController::class, 'send'])->name('send.otp');
+    Route::post('/verify-otp', [OtpController::class, 'verify'])->name('verify.otp');
+});
 
 // صفحة استكمال التسجيل
-Route::get('/register-details', [RegisterController::class, 'showDetailsForm'])->name('register-details');
+Route::get('/register-details', [RegisterController::class, 'showDetailsForm'])->name('register.details');
 Route::post('/register-details', [RegisterController::class, 'storeDetails'])->name('register-details.store');
 
+//home page login
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+
 
 //getcities ajax
 Route::get('/cities', [RegisterController::class, 'getCities'])->name('get.cities');
 
 
 
-// test
-
-Route::get('/test-whatsapp', function () {
-    $sid = env('TWILIO_SID');
-    $token = env('TWILIO_TOKEN');
-    $from = env('TWILIO_WHATSAPP_FROM');
-
-    $to = 'whatsapp:+201016440812'; // ضع رقمك مع كود الدولة
-    $message = "هذه رسالة تجريبية من Laravel باستخدام Twilio Sandbox!";
-
-    try {
-        $client = new Client($sid, $token);
-        $client->messages->create($to, [
-            'from' => $from,
-            'body' => $message
-        ]);
-        return "تم إرسال الرسالة بنجاح ✅";
-    } catch (\Exception $e) {
-        return "حدث خطأ: " . $e->getMessage();
-    }
-});
-
-// test
-
-Route::get('/test-sms', function () {
-    $sid = env('TWILIO_SID');
-    $token = env('TWILIO_AUTH_TOKEN');
-    $from = env('TWILIO_FROM');
-    $to = '+20xxxxxxxxxx'; // رقمك التجريبي
-
-    if (!$sid || !$token || !$from) {
-        return response()->json(['status' => 'error', 'message' => 'TWILIO_SID, TWILIO_AUTH_TOKEN or TWILIO_FROM is missing']);
-    }
-
-    $client = new Client($sid, $token);
-    $message = $client->messages->create($to, [
-        'from' => $from,
-        'body' => 'رسالة اختبار من Laravel'
-    ]);
-
-    return response()->json(['status' => 'sent', 'sid' => $message->sid]);
-});
 
 
 
-Route::get('/check-env', function () {
-    return [
-        'TWILIO_SID' => env('TWILIO_SID'),
-        'TWILIO_AUTH_TOKEN' => env('TWILIO_AUTH_TOKEN'),
-        'TWILIO_FROM' => env('TWILIO_FROM'),
-    ];
-});
 
 
 
-Route::get('/test-firebase', function () {
-    try {
-        $json = file_get_contents(env('FIREBASE_CREDENTIALS'));
-        $factory = (new Factory)->withServiceAccount($json);
-
-        $auth = $factory->createAuth();
-        $users = $auth->listUsers(100);
-
-        return "Firebase Connected ✅ Users Count: " . count(iterator_to_array($users));
-    } catch (\Throwable $e) {
-        return "Firebase Error ❌: " . $e->getMessage();
-    }
-});
 
 
-Route::get('/check-file', function () {
-    $path = env('FIREBASE_CREDENTIALS'); // مسار كامل الآن
-    if (file_exists($path)) {
-        return "File exists ✅ at: " . $path;
-    } else {
-        return "File NOT found ❌ at: " . $path;
-    }
-});
 
 
-Route::get('/test-mail', function () {
-    Mail::raw('اختبار الإرسال من Laravel', function ($message) {
-        $message->to('example@example.com')->subject('اختبار Gmail');
-    });
 
-    return 'تم الإرسال بنجاح!';
-});
+
+

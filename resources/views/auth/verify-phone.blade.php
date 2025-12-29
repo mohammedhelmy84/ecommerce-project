@@ -4,132 +4,112 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-md-6">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white text-center">
-                        التحقق من رقم الهاتف
-                    </div>
-
+                <div class="card">
+                    <div class="card-header">التحقق من رقم الموبايل</div>
                     <div class="card-body">
-
-                        {{-- رقم الهاتف --}}
-                        <div class="mb-3">
-                            <label class="form-label">رقم الهاتف</label>
-                            <input id="phone" type="text" class="form-control" placeholder="+201012345678">
+                        <div class="form-group mb-3">
+                            <label>رقم الموبايل</label>
+                            <input type="text" id="phone" class="form-control" placeholder="+201012345678" dir="ltr">
+                            <small class="text-muted">مثال: +201012345678</small>
                         </div>
 
-                        <div id="recaptcha-container"></div>
-
-                        {{-- إرسال OTP --}}
-                        <button class="btn btn-secondary w-100 mb-3" onclick="sendOTP()">
-                            إرسال كود التحقق
+                        <button class="btn btn-primary w-100" onclick="sendOTP()">
+                            إرسال كود التفعيل
                         </button>
 
-                        {{-- إدخال الكود --}}
-                        <div class="mb-3">
-                            <label class="form-label">ادخل كود OTP</label>
-                            <input id="otp" type="text" class="form-control" placeholder="123456">
+                        <div id="otpSection" style="display: none;" class="mt-4">
+                            <div class="form-group mb-3">
+                                <label>كود التفعيل</label>
+                                <input type="text" id="otp" class="form-control" placeholder="123456" maxlength="6">
+                            </div>
+                            <button class="btn btn-success w-100" onclick="verifyOTP()">
+                                تحقق
+                            </button>
                         </div>
 
-                        {{-- تأكيد الكود --}}
-                        <button class="btn btn-success w-100" onclick="verifyOTP()">
-                            تأكيد الكود والمتابعة
-                        </button>
-
+                        <div id="message" class="mt-3"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Firebase --}}
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // Config الحقيقي الخاص بمشروعك Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyA-euvplvYwDKR3WyBgC24eyJbtcSk8mQs",
-            authDomain: "e-commerce-6e5e6.firebaseapp.com",
-            projectId: "e-commerce-6e5e6",
-            storageBucket: "e-commerce-6e5e6.firebasestorage.app",
-            messagingSenderId: "636322492923",
-            appId: "1:636322492923:web:cb8168f5499a8e5766db5e",
-            measurementId: "G-XR0RXJNR1V"
-        };
+        async function sendOTP() {
+            const phone = document.getElementById('phone').value;
+            const messageDiv = document.getElementById('message');
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        let confirmationResult;
-
-        // إرسال OTP
-        function sendOTP() {
-            const phone = document.getElementById('phone').value.trim();
-
-            if (!phone) {
-                alert("يرجى إدخال رقم الهاتف");
+            if (!phone || !phone.startsWith('+')) {
+                messageDiv.innerHTML = '<div class="alert alert-danger">من فضلك أدخل رقم صحيح بالصيغة الدولية</div>';
                 return;
             }
 
-            // تفعيل reCAPTCHA
-            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
-                'recaptcha-container',
-                { 'size': 'invisible' }
-            );
+            messageDiv.innerHTML = '<div class="alert alert-info">جاري الإرسال...</div>';
 
-            auth.signInWithPhoneNumber(phone, window.recaptchaVerifier)
-                .then(result => {
-                    confirmationResult = result;
-                    alert("✅ تم إرسال كود التحقق إلى رقمك");
-                })
-                .catch(error => {
-                    alert("خطأ: " + error.message);
-                    console.error(error);
-                });
+            try {
+                const response = await axios.post('/api/send-otp', { phone });
+
+                document.getElementById('otpSection').style.display = 'block';
+                messageDiv.innerHTML = '<div class="alert alert-success">✅ تم إرسال الكود: ' + response.data.debug_otp + '</div>';
+            } catch (error) {
+                messageDiv.innerHTML = '<div class="alert alert-danger">❌ ' +
+                    (error.response?.data?.message || 'فشل الإرسال') + '</div>';
+            }
         }
 
-        // التحقق من OTP
-        function verifyOTP() {
-            const code = document.getElementById('otp').value.trim();
+            /*
+            async function verifyOTP() {
+                const phone = document.getElementById('phone').value;
+                const otp = document.getElementById('otp').value;
+                const messageDiv = document.getElementById('message');
 
-            if (!code) {
-                alert("يرجى إدخال كود OTP");
+                if (!otp || otp.length !== 6) {
+                    messageDiv.innerHTML = '<div class="alert alert-danger">من فضلك أدخل كود مكون من 6 أرقام</div>';
+                    return;
+                }
+
+                messageDiv.innerHTML = '<div class="alert alert-info">جاري التحقق...</div>';
+
+                try {
+                    const response = await axios.post('/api/verify-otp', { phone, otp });
+
+                    messageDiv.innerHTML = '<div class="alert alert-success">✅ تم التحقق بنجاح! جاري التحويل...</div>';
+
+                    setTimeout(() => {
+                        window.location.href = "{{ url('register-details') }}";
+                    }, 1500);
+                } catch (error) {
+            messageDiv.innerHTML = '<div class="alert alert-danger">❌ ' +
+                (error.response?.data?.message || 'كود خاطئ') + '</div>';
+        }
+            }
+            */
+
+        async function verifyOTP() {
+            const phone = document.getElementById('phone').value;
+            const otp = document.getElementById('otp').value;
+            const messageDiv = document.getElementById('message');
+
+            if (!otp || otp.length !== 6) {
+                messageDiv.innerHTML = '<div class="alert alert-danger">من فضلك أدخل كود مكون من 6 أرقام</div>';
                 return;
             }
 
-            confirmationResult.confirm(code)
-                .then(result => {
-                    const user = result.user;
+            messageDiv.innerHTML = '<div class="alert alert-info">جاري التحقق...</div>';
 
-                    user.getIdToken().then(token => {
+            try {
+                const response = await axios.post('/api/verify-otp', { phone, otp });
 
-                        // أرسل بيانات التحقق للسيرفر
-                        fetch("{{ route('verify.phone.confirm') }}", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": "{{ csrf_token() }}"
-                            },
-                            body: JSON.stringify({
-                                phone: document.getElementById('phone').value,
-                                idToken: token
+                messageDiv.innerHTML = '<div class="alert alert-success">✅ تم التحقق بنجاح! جاري التحويل...</div>';
 
-                            })
-                        })
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.status === "verified") {
-                                    window.location.href = "{{ route('register-details') }}";
-                                } else {
-                                    alert("خطأ أثناء التحقق!");
-                                }
-                            });
-                    });
-                })
-                .catch(error => {
-                    alert("خطأ في كود OTP: " + error.message);
-                    console.error(error);
-                });
+                // ✅ إعادة التوجيه بعد نجاح التحقق
+                window.location.href = "/register-details"; // أو route Laravel إذا مستخدم route helper
+            } catch (error) {
+                messageDiv.innerHTML = '<div class="alert alert-danger">❌ ' +
+                    (error.response?.data?.message || 'كود خاطئ') + '</div>';
+            }
         }
+
     </script>
-
 @endsection

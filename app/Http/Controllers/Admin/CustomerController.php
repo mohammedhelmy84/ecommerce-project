@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Customer;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Dompdf\Dompdf;
@@ -19,7 +18,7 @@ class CustomerController extends Controller
 
     public function index()
     {
-        $customers = Customer::latest()->paginate(10);
+        $customers = User::where('role','customer')->paginate(10);
 
         return view('admin.customers.index', compact('customers'));
     }
@@ -31,57 +30,35 @@ class CustomerController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:customers',
-            'phone' => 'nullable',
-            'address' => 'nullable',
-        ]);
-
-        Customer::create($request->all());
-
-        return redirect()->route('admin.customers.index')->with('success', 'تم إضافة العميل بنجاح');
+      //
     }
 
 
 
-    public function show(Customer $customer)
+    public function show(User $customer)
     {
         return view('admin.customers.show', compact('customer'));
     }
 
 
-    public function edit(Customer $customer)
+    public function edit(User $customer)
     {
-        return view('admin.customers.edit', compact('customer'));
+        //
     }
 
 
-    public function update(Request $request, Customer $customer)
+    public function update(Request $request, User $customer)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email',
-            'phone' => 'nullable|string|max:50',
-            'address' => 'nullable|string',
-        ]);
-
-        $customer->update($request->only(['name', 'email', 'phone', 'address']));
-
-        return redirect()->route('customers.index')
-            ->with('success', 'تم تحديث بيانات العميل بنجاح');
+       //
     }
 
 
-    public function destroy(Customer $customer)
+    public function destroy(User $customer)
     {
-        $customer->delete();
-
-        return redirect()->route('customers.index')
-            ->with('success', 'تم حذف العميل بنجاح');
+       //
     }
 
-    public function print(Customer $customer)
+    public function print(User $customer)
     {
         $mpdf = new Mpdf([
             'mode' => 'utf-8',

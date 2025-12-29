@@ -2,25 +2,46 @@
 
 namespace App\Services;
 
-use Twilio\Rest\Client;
+use Vonage\Client;
+use Vonage\Client\Credentials\Basic;
+use Vonage\SMS\Message\SMS;
 
 class SmsService
 {
-    protected $twilio;
+    protected $client;
 
     public function __construct()
     {
-        $this->twilio = new Client(
-            config('services.twilio.sid'),
-            config('services.twilio.token')
+        $basic = new Basic(
+            config('services.vonage.key'),
+            config('services.vonage.secret')
         );
+
+        $this->client = new Client($basic);
     }
 
-    public function send($to, $message)
+    public function sendOTP($phoneNumber, $otp)
     {
-        $this->twilio->messages->create($to, [
-            'from' => config('services.twilio.from'),
-            'body' => $message
-        ]);
+        try {
+            $message = new SMS(
+                $phoneNumber,                              // To
+                config('services.vonage.from'),            // From
+                "كود التفعيل الخاص بك: {$otp}"           // Message
+            );
+
+            $response = $this->client->sms()->send($message);
+
+            $current = $response->current();
+
+            if ($current->getStatus() == 0) {
+                return $current->getMessageId();
+            } else {
+                throw new \Exception('Vonage Error: ' . $current->getStatus());
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Vonage SMS Error: ' . $e->getMessage());
+            throw new \Exception('فشل إرسال الرسالة: ' . $e->getMessage());
+        }
     }
 }

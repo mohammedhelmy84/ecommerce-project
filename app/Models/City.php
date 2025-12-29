@@ -8,6 +8,9 @@ class City extends Model
 {
     protected $table = "cities";  
     protected $fillable = ['name', 'governorate_id'];
+    protected $casts = [
+        'name' => 'array',
+    ];
 
     public function governorate()
     {
